@@ -229,12 +229,14 @@ export async function scanIngredients(
  */
 export async function generateRecipe(
   ingredients: string[],
-  vibe: "eco" | "health" | "travel"
+  vibe: "eco" | "health" | "travel",
+  cuisine?: string
 ): Promise<Recipe> {
   console.log("[RECIPE] generateRecipe called with:", {
     ingredientsCount: ingredients.length,
     ingredients: ingredients,
     vibe: vibe,
+    cuisine: cuisine,
   });
 
   // If no API key is set, return mock data
@@ -252,31 +254,37 @@ export async function generateRecipe(
   });
 
   const vibePrompts = {
-    eco: "Create a zero-waste recipe that uses ALL the provided ingredients to minimize food waste. Focus on using every part of the ingredients and avoiding any waste.",
-    health: "Create a high-protein, macro-optimized recipe focused on fitness and health. Include specific portion sizes and macro breakdowns.",
-    travel: "Create a recipe with a cultural twist - transform these ingredients into a dish from a specific cuisine (e.g., Japanese, Mexican, Italian). Make it authentic and flavorful.",
+    eco: "Create a zero-waste recipe that uses ALL the provided ingredients to minimize food waste. Focus on using every part of the ingredients.",
+    health: "Create a high-protein, macro-optimized recipe focused on fitness and health.",
+    travel: "Create a recipe with a cultural twist - transform these ingredients into a globally-inspired dish.",
   };
+
+  const cuisinePrompt = cuisine && cuisine !== "any" 
+    ? `\n\nIMPORTANT: This MUST be a ${cuisine} cuisine recipe. Use ${cuisine} cooking techniques, seasonings, and presentation styles.`
+    : "";
 
   try {
     const url = `${GEMINI_API_URL}/models/${GEMINI_MODEL_TEXT}:generateContent?key=${GEMINI_API_KEY}`;
     console.log("[RECIPE] API URL:", url.replace(GEMINI_API_KEY, "***HIDDEN***"));
     
-    const prompt = `You are a professional chef and recipe creator. Always respond with valid JSON only.
+    const prompt = `You are a professional chef. Always respond with valid JSON only.
 
-${vibePrompts[vibe]}
+${vibePrompts[vibe]}${cuisinePrompt}
 
 Ingredients: ${ingredients.join(", ")}
 
+IMPORTANT: The recipe title MUST be in English. If creating a non-English cuisine dish, use the format: "English Name (Native Name)" - for example: "Pork and Egg Rice Bowl (Buta Soboro Tamago Donburi)" or "Chicken Teriyaki Bowl".
+
 Return a JSON object with this exact structure:
 {
-  "title": "Recipe name",
+  "title": "Recipe name (always in English or English + native name)",
   "calories": number (estimated),
   "ingredients": ["ingredient1", "ingredient2", ...],
   "steps": ["step 1", "step 2", ...],
   "vibe": "${vibe}"
 }
 
-Make sure the ingredients array includes all provided ingredients plus any common pantry items needed.`;
+Make the steps concise and clear. Include timing when needed.`;
 
     console.log("[RECIPE] Sending request to Gemini API...");
     console.log("[RECIPE] Prompt length:", prompt.length, "characters");

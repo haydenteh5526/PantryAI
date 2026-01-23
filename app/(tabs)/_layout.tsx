@@ -6,11 +6,11 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#ffffff",
-        tabBarInactiveTintColor: "#666666",
+        tabBarActiveTintColor: "#84A98C",
+        tabBarInactiveTintColor: "#CAD2C5",
         tabBarStyle: {
-          backgroundColor: "#1a1a1a",
-          borderTopColor: "#3a3a3a",
+          backgroundColor: "#FFFFFF",
+          borderTopColor: "#CAD2C5",
         },
       }}
     >
@@ -20,6 +20,15 @@ export default function TabLayout() {
           title: "Home",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="camera" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: "History",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="time" size={size} color={color} />
           ),
         }}
       />
