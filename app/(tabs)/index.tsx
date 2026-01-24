@@ -1,10 +1,10 @@
 import { useState, useRef } from "react";
 import { View, Text, TouchableOpacity, Alert, StyleSheet, ScrollView } from "react-native";
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { scanIngredients } from "@/services/ai";
 
 export default function HomeScreen() {
   const [showCamera, setShowCamera] = useState(false);
@@ -46,6 +46,35 @@ export default function HomeScreen() {
       );
     }
 
+    const handlePickFromGallery = async () => {
+      try {
+        setIsScanning(true);
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (perm.status !== "granted") {
+          Alert.alert("Permission required", "Please allow photo library access.");
+          return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: false,
+          quality: 0.9,
+        });
+
+        if (result.canceled) return;
+
+        const uri = result.assets?.[0]?.uri;
+        if (!uri) throw new Error("No image selected");
+
+        setShowCamera(false);
+        router.push({ pathname: "/scanning-ingredients", params: { imageUri: uri } });
+      } catch (error: any) {
+        Alert.alert("Error", error?.message || "Failed to pick image.");
+      } finally {
+        setIsScanning(false);
+      }
+    };
+
     const handleScan = async () => {
       console.log("[CAMERA] Scan button pressed");
       
@@ -63,6 +92,7 @@ export default function HomeScreen() {
         const photo = await (cameraRef.current as any).takePictureAsync({
           quality: 0.8,
           base64: false,
+          shutterSound: false,
         });
 
         console.log("[CAMERA] Photo capture result:", {
@@ -78,17 +108,9 @@ export default function HomeScreen() {
         }
 
         console.log("[CAMERA] Photo captured successfully:", photo.uri);
-        console.log("[AI] Starting ingredient scan...");
 
-        const ingredients = await scanIngredients(photo.uri);
-        
-        console.log("[AI] Ingredients received:", ingredients);
-        console.log("[NAV] Navigating to ingredient confirmation with:", ingredients.length, "ingredients");
-        
-        router.push({
-          pathname: "/ingredient-confirmation",
-          params: { ingredients: JSON.stringify(ingredients) },
-        });
+        setShowCamera(false);
+        router.push({ pathname: "/scanning-ingredients", params: { imageUri: photo.uri } });
       } catch (error: any) {
         console.error("[ERROR] Scan error occurred:", {
           message: error?.message,
@@ -98,11 +120,8 @@ export default function HomeScreen() {
         
         if (error?.message?.includes("takePictureAsync") || error?.message?.includes("Camera")) {
           console.log("[FALLBACK] Camera capture failed, using mock data");
-          const ingredients = await scanIngredients(null);
-          router.push({
-            pathname: "/ingredient-confirmation",
-            params: { ingredients: JSON.stringify(ingredients) },
-          });
+          setShowCamera(false);
+          router.push({ pathname: "/scanning-ingredients" });
         } else {
           console.error("[ERROR] Non-camera error, showing alert to user");
           Alert.alert(
@@ -153,7 +172,13 @@ export default function HomeScreen() {
                 )}
               </TouchableOpacity>
               <View style={{ width: 24 }} />
-              <View style={styles.controlButton} />
+              <TouchableOpacity
+                onPress={handlePickFromGallery}
+                disabled={isScanning}
+                style={styles.controlButton}
+              >
+                <Ionicons name="images" size={24} color="#fff" />
+              </TouchableOpacity>
             </View>
             <Text style={styles.instructionText}>
               {isScanning ? "Scanning..." : "Tap to scan ingredients"}

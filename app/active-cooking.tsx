@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, Alert, ScrollView, Animated, Dimensions } from "react-native";
+import { View, Text, TouchableOpacity, Alert, ScrollView, Animated } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState, useRef } from "react";
@@ -20,7 +20,6 @@ export default function ActiveCookingScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [currentStep, setCurrentStep] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
   const [timers, setTimers] = useState<Timer[]>([]);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   
@@ -83,8 +82,6 @@ export default function ActiveCookingScreen() {
 
   // Timer countdown logic
   useEffect(() => {
-    if (isPaused) return;
-
     const interval = setInterval(() => {
       setTimers((prevTimers) =>
         prevTimers.map((timer) => {
@@ -112,11 +109,11 @@ export default function ActiveCookingScreen() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isPaused, voiceEnabled]);
+  }, [voiceEnabled]);
 
   // Speak current step when voice is enabled and step changes
   useEffect(() => {
-    if (voiceEnabled && !isPaused) {
+    if (voiceEnabled) {
       Speech.stop(); // Stop any ongoing speech
       const stepText = recipe.steps[currentStep];
       Speech.speak(`Step ${currentStep + 1}. ${stepText}`, { 
@@ -168,14 +165,6 @@ export default function ActiveCookingScreen() {
       ]).start();
       
       setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const togglePause = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setIsPaused(!isPaused);
-    if (!isPaused) {
-      Speech.stop();
     }
   };
 
@@ -307,17 +296,6 @@ export default function ActiveCookingScreen() {
             >
               <Ionicons 
                 name={voiceEnabled ? "volume-high" : "volume-mute"} 
-                size={24} 
-                color="#2F3E46" 
-              />
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              onPress={togglePause}
-              className={`p-2 rounded-full ${isPaused ? 'bg-yellow-500' : 'bg-surface'}`}
-            >
-              <Ionicons 
-                name={isPaused ? "play" : "pause"} 
                 size={24} 
                 color="#2F3E46" 
               />

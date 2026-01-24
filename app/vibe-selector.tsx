@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Alert, StyleSheet } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
@@ -10,6 +10,10 @@ export default function VibeSelectorScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [selectedCuisine, setSelectedCuisine] = useState<CuisineStyle | null>(null);
+
+  const showUnderDevelopment = () => {
+    Alert.alert("Under development", "Feature currently under development.");
+  };
 
   const cuisines: Array<{ id: CuisineStyle; name: string; icon: string; emoji: string }> = [
     { id: "chinese", name: "Chinese", icon: "restaurant", emoji: "🥢" },
@@ -46,38 +50,52 @@ export default function VibeSelectorScreen() {
       </View>
 
       <ScrollView className="flex-1 px-6 py-6">
-        <Text className="text-text/60 mb-6 text-center">
-          Select your preferred style
-        </Text>
-
         {/* Cuisine Style Selection */}
         <View className="mb-6">
           <Text className="text-text text-lg font-semibold mb-3">
             Cuisine Style
           </Text>
-          <View className="flex-row flex-wrap gap-2">
-            {cuisines.map((cuisine) => (
-              <TouchableOpacity
-                key={cuisine.id}
-                onPress={() => setSelectedCuisine(cuisine.id)}
-                className={`rounded-2xl px-4 py-3 mb-2 ${
-                  selectedCuisine === cuisine.id
-                    ? "bg-primary"
-                    : "bg-surface"
-                }`}
-                style={{
-                  borderWidth: selectedCuisine === cuisine.id ? 2 : 1,
-                  borderColor: selectedCuisine === cuisine.id ? "#84A98C" : "#CAD2C5",
-                }}
-              >
-                <Text className="text-center">
-                  <Text className="text-2xl mr-2">{cuisine.emoji}</Text>
-                  <Text className={selectedCuisine === cuisine.id ? "text-surface font-semibold" : "text-text/60"}>
-                    {cuisine.name}
+          <View style={{ position: "relative" }}>
+            <View className="flex-row flex-wrap gap-2">
+              {cuisines.map((cuisine) => (
+                <TouchableOpacity
+                  key={cuisine.id}
+                  onPress={() => setSelectedCuisine(cuisine.id)}
+                  className={`rounded-2xl px-4 py-3 mb-2 ${
+                    selectedCuisine === cuisine.id
+                      ? "bg-primary"
+                      : "bg-surface"
+                  }`}
+                  style={{
+                    borderWidth: selectedCuisine === cuisine.id ? 2 : 1,
+                    borderColor: selectedCuisine === cuisine.id ? "#84A98C" : "#CAD2C5",
+                  }}
+                >
+                  <Text className="text-center">
+                    <Text className="text-2xl mr-2">{cuisine.emoji}</Text>
+                    <Text
+                      className={
+                        selectedCuisine === cuisine.id
+                          ? "text-surface font-semibold"
+                          : "text-text/60"
+                      }
+                    >
+                      {cuisine.name}
+                    </Text>
                   </Text>
-                </Text>
-              </TouchableOpacity>
-            ))}
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* TEMP LOCK */}
+            <TouchableOpacity
+              onPress={showUnderDevelopment}
+              activeOpacity={1}
+              style={[
+                StyleSheet.absoluteFillObject,
+                { backgroundColor: "rgba(0, 0, 0, 0.15)", borderRadius: 16 },
+              ]}
+            />
           </View>
         </View>
 
@@ -108,7 +126,7 @@ export default function VibeSelectorScreen() {
 
         {/* Get Lean (Health) - Premium */}
         <TouchableOpacity
-          onPress={() => handleVibeSelect("health")}
+          onPress={showUnderDevelopment}
           className="bg-surface rounded-2xl p-6 mb-4 border-2 border-blue-500 relative"
         >
           <View className="absolute top-4 right-4">
@@ -128,11 +146,18 @@ export default function VibeSelectorScreen() {
           <Text className="text-text/60">
             High protein, macro-optimized recipes for your fitness goals
           </Text>
+          <View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFillObject,
+              { backgroundColor: "rgba(0, 0, 0, 0.08)", borderRadius: 16 },
+            ]}
+          />
         </TouchableOpacity>
 
         {/* Travel (Culture) - Premium */}
         <TouchableOpacity
-          onPress={() => handleVibeSelect("travel")}
+          onPress={showUnderDevelopment}
           className="bg-surface rounded-2xl p-6 mb-4 border-2 border-primary relative"
         >
           <View className="absolute top-4 right-4">
@@ -150,6 +175,13 @@ export default function VibeSelectorScreen() {
           <Text className="text-text/60">
             Cultural twists - transform your ingredients into global cuisines
           </Text>
+          <View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFillObject,
+              { backgroundColor: "rgba(0, 0, 0, 0.08)", borderRadius: 16 },
+            ]}
+          />
         </TouchableOpacity>
       </ScrollView>
     </View>
