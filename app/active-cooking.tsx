@@ -32,6 +32,21 @@ export default function ActiveCookingScreen() {
   // Animation for step transitions
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const lastTimerCueAt = useRef(0);
+
+  const playTimerDoneCue = () => {
+    // prevent multiple timers finishing at once from stacking speech
+    const now = Date.now();
+    if (now - lastTimerCueAt.current < 800) return;
+    lastTimerCueAt.current = now;
+
+    Speech.stop();
+    Speech.speak("Timer done", {
+      rate: 0.95,
+      pitch: 1.05,
+      language: "en-US",
+    });
+  };
 
   // Extract time from step text (e.g., "Cook for 15 minutes")
   const extractTime = (text: string): { duration: number; label: string } | null => {
@@ -94,13 +109,7 @@ export default function ActiveCookingScreen() {
             console.log(`[TIMER] Timer finished: ${timer.label}`);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             Alert.alert("Timer Done!", timer.label, [{ text: "OK" }]);
-            if (voiceEnabled) {
-              Speech.speak("Timer complete", { 
-                rate: 0.8,
-                pitch: 0.95,
-                language: 'en-US',
-              });
-            }
+            playTimerDoneCue();
           }
           
           return { ...timer, remaining: newRemaining };
