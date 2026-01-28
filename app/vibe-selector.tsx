@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, ScrollView, Alert, StyleSheet } from "rea
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type CuisineStyle = "chinese" | "korean" | "japanese" | "western" | "italian" | "mexican" | "indian" | "thai";
 type Vibe = "eco" | "health" | "travel";
@@ -26,8 +27,28 @@ export default function VibeSelectorScreen() {
     { id: "thai", name: "Thai", icon: "restaurant", emoji: "🍲" },
   ];
 
-  const handleVibeSelect = (vibe: Vibe) => {
+  const handleVibeSelect = async (vibe: Vibe) => {
     const ingredients = params.ingredients as string;
+    
+    // Check if premium vibe requires authentication
+    if (vibe !== "eco") {
+      const userMode = await AsyncStorage.getItem("userMode");
+      if (userMode !== "premium") {
+        Alert.alert(
+          "Premium Feature 🌟",
+          `${vibe === "health" ? "Health & Fitness" : "Travel & Cultural"} vibes are available for premium members.\n\nUpgrade to unlock personalized recipes!`,
+          [
+            { text: "Maybe Later", style: "cancel" },
+            {
+              text: "Upgrade Now",
+              onPress: () => router.push("/auth"),
+            },
+          ]
+        );
+        return;
+      }
+    }
+    
     router.push({
       pathname: "/recipe-detail",
       params: {

@@ -1,18 +1,30 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { View, Text, TouchableOpacity, Alert, StyleSheet, ScrollView } from "react-native";
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function HomeScreen() {
   const [showCamera, setShowCamera] = useState(false);
   const [facing, setFacing] = useState<CameraType>("back");
   const [permission, requestPermission] = useCameraPermissions();
   const [isScanning, setIsScanning] = useState(false);
+  const [userMode, setUserMode] = useState<string | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    loadUserMode();
+  }, []);
+
+  const loadUserMode = async () => {
+    const mode = await AsyncStorage.getItem("userMode");
+    setUserMode(mode);
+  };
 
   // If camera is shown, display camera view
   if (showCamera) {
@@ -236,6 +248,46 @@ export default function HomeScreen() {
               Take a photo of your fridge or pantry to detect ingredients
             </Text>
           </TouchableOpacity>
+
+          {/* Premium Upsell Card (only for guests) */}
+          {userMode === "guest" && (
+            <TouchableOpacity
+              onPress={() => router.push("/auth")}
+              activeOpacity={0.8}
+              className="mb-4 overflow-hidden rounded-3xl"
+              style={{
+                shadowColor: '#fbbf24',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.3,
+                shadowRadius: 16,
+                elevation: 8,
+              }}
+            >
+              <LinearGradient
+                colors={['#fbbf24', '#f59e0b']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ padding: 24 }}
+              >
+                <View className="flex-row items-start justify-between mb-3">
+                  <View className="bg-white/20 px-3 py-1 rounded-full">
+                    <Text className="text-white font-bold text-xs">UPGRADE</Text>
+                  </View>
+                  <Ionicons name="star" size={32} color="#fff" />
+                </View>
+                <Text className="text-white text-2xl font-bold mb-2">
+                  Unlock Premium Features
+                </Text>
+                <Text className="text-white/90 text-base mb-4">
+                  Get cloud sync, social sharing, and exclusive vibes
+                </Text>
+                <View className="flex-row items-center">
+                  <Text className="text-white font-semibold mr-2">Start Free Trial</Text>
+                  <Ionicons name="arrow-forward" size={20} color="#fff" />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
 
           {/* Manual Input Card */}
           <TouchableOpacity

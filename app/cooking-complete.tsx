@@ -109,6 +109,23 @@ export default function CookingCompleteScreen() {
       return;
     }
 
+    // Check if premium for social sharing
+    const userMode = await AsyncStorage.getItem("userMode");
+    if (userMode !== "premium") {
+      Alert.alert(
+        "Premium Feature 🌟",
+        "Social sharing is available for premium members.\n\nUpgrade to share your creations with the community!",
+        [
+          { text: "Maybe Later", style: "cancel" },
+          {
+            text: "Upgrade Now",
+            onPress: () => router.push("/auth"),
+          },
+        ]
+      );
+      return;
+    }
+
     setIsSharing(true);
     await saveToHistory(true);
     
