@@ -4,13 +4,19 @@
  * Can be switched to OpenAI for production
  */
 
-import { 
-  GEMINI_API_KEY, 
-  GEMINI_API_URL, 
-  GEMINI_MODEL_VISION, 
-  GEMINI_MODEL_TEXT 
+import {
+  GEMINI_API_KEY,
+  GEMINI_API_URL,
+  GEMINI_MODEL_VISION,
+  GEMINI_MODEL_TEXT,
 } from "@/lib/config";
 import * as FileSystem from "expo-file-system/legacy";
+import { GENERAL_SAFETY_RULES } from "@/constants/cookingData";
+import {
+  getProteinSafety,
+  selectCookingMethod,
+  buildRecipeSystemPrompt,
+} from "./recipeEngine";
 
 export interface Recipe {
   title: string;
@@ -18,6 +24,8 @@ export interface Recipe {
   ingredients: string[];
   steps: string[];
   vibe: string;
+  /** Mandatory safety rules for this recipe; show at end of recipe view, not as steps. */
+  safetyRules?: string[];
 }
 
 /**
@@ -253,25 +261,27 @@ export async function generateRecipe(
     keyLength: GEMINI_API_KEY.length,
   });
 
-  const vibePrompts = {
-    eco: "Create a zero-waste recipe that uses ALL the provided ingredients to minimize food waste. Focus on using every part of the ingredients.",
-    health: "Create a high-protein, macro-optimized recipe focused on fitness and health.",
-    travel: "Create a recipe with a cultural twist - transform these ingredients into a globally-inspired dish.",
-  };
+  const proteinSafety = getProteinSafety(ingredients);
+  const method = selectCookingMethod(ingredients);
+  const systemPrompt = buildRecipeSystemPrompt(
+    ingredients,
+    vibe,
+    method,
+    proteinSafety
+  );
 
-  const cuisinePrompt = cuisine && cuisine !== "any" 
-    ? `\n\nIMPORTANT: This MUST be a ${cuisine} cuisine recipe. Use ${cuisine} cooking techniques, seasonings, and presentation styles.`
-    : "";
+  const cuisinePrompt =
+    cuisine && cuisine !== "any"
+      ? `\n\nIMPORTANT: This MUST be a ${cuisine} cuisine recipe. Use ${cuisine} cooking techniques, seasonings, and presentation styles.`
+      : "";
 
   try {
     const url = `${GEMINI_API_URL}/models/${GEMINI_MODEL_TEXT}:generateContent?key=${GEMINI_API_KEY}`;
     console.log("[RECIPE] API URL:", url.replace(GEMINI_API_KEY, "***HIDDEN***"));
-    
-    const prompt = `You are a professional chef. Always respond with valid JSON only.
 
-${vibePrompts[vibe]}${cuisinePrompt}
+    const prompt = `${systemPrompt}${cuisinePrompt}
 
-Ingredients: ${ingredients.join(", ")}
+Always respond with valid JSON only.
 
 IMPORTANT: The recipe title MUST be in English. If creating a non-English cuisine dish, use the format: "English Name (Native Name)" - for example: "Pork and Egg Rice Bowl (Buta Soboro Tamago Donburi)" or "Chicken Teriyaki Bowl".
 
@@ -472,7 +482,7 @@ Make the steps concise and clear. Include timing when needed.`;
       }
     }
     
-    // Validate and return recipe
+    // Validate and return recipe (safety rules from our engine, shown at end of view only)
     const validatedRecipe: Recipe = {
       title: recipe.title || "Generated Recipe",
       calories: typeof recipe.calories === "number" ? recipe.calories : 500,
@@ -483,6 +493,7 @@ Make the steps concise and clear. Include timing when needed.`;
         ? recipe.steps 
         : ["Follow the recipe instructions carefully."],
       vibe: recipe.vibe || vibe,
+      safetyRules: [...GENERAL_SAFETY_RULES, proteinSafety],
     };
     
     console.log("[RECIPE] Final validated recipe:", {
@@ -542,6 +553,7 @@ function getMockRecipe(
     ],
   };
 
+  const proteinSafety = getProteinSafety(ingredients);
   return {
     title: vibeTitles[vibe],
     calories: Math.floor(Math.random() * 200) + 400,
@@ -553,5 +565,6 @@ function getMockRecipe(
     ],
     steps: vibeSteps[vibe],
     vibe,
+    safetyRules: [...GENERAL_SAFETY_RULES, proteinSafety],
   };
 }

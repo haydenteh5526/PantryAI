@@ -15,12 +15,16 @@ export default function Index() {
       const hasSeenOnboarding = await AsyncStorage.getItem("hasSeenOnboarding");
       const userMode = await AsyncStorage.getItem("userMode");
       
+      // Normalize values - handle null, undefined, empty string, etc.
+      const seenOnboarding = hasSeenOnboarding === "true";
+      const hasUserMode = userMode && userMode !== "null" && userMode !== "";
+      
       // Wait a brief moment for splash effect
       setTimeout(() => {
-        if (hasSeenOnboarding !== "true") {
+        if (!seenOnboarding) {
           // First time user - show onboarding
           router.replace("/welcome");
-        } else if (!userMode) {
+        } else if (!hasUserMode) {
           // Seen onboarding but not authenticated - show auth
           router.replace("/auth");
         } else {

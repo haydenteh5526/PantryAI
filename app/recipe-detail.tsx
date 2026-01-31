@@ -1,16 +1,8 @@
 import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { generateRecipe } from "@/services/ai";
+import { generateRecipe, type Recipe } from "@/services/ai";
 import { useEffect, useState } from "react";
-
-interface Recipe {
-  title: string;
-  calories: number;
-  ingredients: string[];
-  steps: string[];
-  vibe: string;
-}
 
 export default function RecipeDetailScreen() {
   const router = useRouter();
@@ -107,6 +99,9 @@ export default function RecipeDetailScreen() {
               {recipe.calories} calories
             </Text>
           </View>
+          <Text className="text-muted text-sm mt-3">
+            AI-generated recipe. Proceed with caution; safeguards have been applied.
+          </Text>
         </View>
 
         <View className="mb-6">
@@ -128,7 +123,7 @@ export default function RecipeDetailScreen() {
 
         <View className="mb-6">
           <Text className="text-text text-xl font-semibold mb-4">
-            Instructions
+            Instructions Review
           </Text>
           <View className="bg-surface rounded-2xl p-4">
             {recipe.steps.map((step, index) => (
@@ -145,6 +140,7 @@ export default function RecipeDetailScreen() {
             ))}
           </View>
         </View>
+
       </ScrollView>
 
       <View className="px-6 pb-6 pt-4 border-t border-muted">

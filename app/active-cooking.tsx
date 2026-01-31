@@ -429,7 +429,7 @@ export default function ActiveCookingScreen() {
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <View className="px-6 pb-8 pt-4 border-t border-muted">
+      <View className="px-6 pb-8 pt-6 mt-4 border-t border-muted">
         <View className="flex-row gap-3 mb-3">
           <TouchableOpacity
             onPress={goToPreviousStep}

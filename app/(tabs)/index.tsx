@@ -219,13 +219,7 @@ export default function HomeScreen() {
         <View className="px-6 pb-6">
           {/* Scan Ingredients Card */}
           <TouchableOpacity
-            onPress={() => {
-              if (permission?.granted) {
-                setShowCamera(true);
-              } else {
-                requestPermission();
-              }
-            }}
+            onPress={() => setShowCamera(true)}
             className="bg-primary rounded-3xl p-6 mb-4 active:opacity-90"
             style={{
               shadowColor: '#84A98C',
