@@ -1,16 +1,21 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Alert } from "react-native";
 
 export default function TabLayout() {
+  const showUnderDevelopment = () => {
+    Alert.alert("Under development", "Feature currently under development.");
+  };
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#ffffff",
-        tabBarInactiveTintColor: "#666666",
+        tabBarActiveTintColor: "#84A98C",
+        tabBarInactiveTintColor: "#CAD2C5",
         tabBarStyle: {
-          backgroundColor: "#1a1a1a",
-          borderTopColor: "#3a3a3a",
+          backgroundColor: "#FFFFFF",
+          borderTopColor: "#CAD2C5",
         },
       }}
     >
@@ -24,7 +29,22 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="history"
+        options={{
+          title: "History",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="time" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="social"
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            showUnderDevelopment();
+          },
+        }}
         options={{
           title: "Social",
           tabBarIcon: ({ color, size }) => (
@@ -34,6 +54,12 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="profile"
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            showUnderDevelopment();
+          },
+        }}
         options={{
           title: "Profile",
           tabBarIcon: ({ color, size }) => (

@@ -36,7 +36,14 @@
         {
           "cameraPermission": "Allow PantryAI to access your camera to scan ingredients."
         }
-      ]
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow PantryAI to access your photos to scan ingredients."
+        }
+      ],
+      "expo-font"
     ],
     "scheme": "pantryai"
   }

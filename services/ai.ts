@@ -4,13 +4,19 @@
  * Can be switched to OpenAI for production
  */
 
-import { 
-  GEMINI_API_KEY, 
-  GEMINI_API_URL, 
-  GEMINI_MODEL_VISION, 
-  GEMINI_MODEL_TEXT 
+import {
+  GEMINI_API_KEY,
+  GEMINI_API_URL,
+  GEMINI_MODEL_VISION,
+  GEMINI_MODEL_TEXT,
 } from "@/lib/config";
 import * as FileSystem from "expo-file-system/legacy";
+import { GENERAL_SAFETY_RULES } from "@/constants/cookingData";
+import {
+  getProteinSafety,
+  selectCookingMethod,
+  buildRecipeSystemPrompt,
+} from "./recipeEngine";
 
 export interface Recipe {
   title: string;
@@ -18,6 +24,8 @@ export interface Recipe {
   ingredients: string[];
   steps: string[];
   vibe: string;
+  /** Mandatory safety rules for this recipe; show at end of recipe view, not as steps. */
+  safetyRules?: string[];
 }
 
 /**
@@ -229,12 +237,14 @@ export async function scanIngredients(
  */
 export async function generateRecipe(
   ingredients: string[],
-  vibe: "eco" | "health" | "travel"
+  vibe: "eco" | "health" | "travel",
+  cuisine?: string
 ): Promise<Recipe> {
   console.log("[RECIPE] generateRecipe called with:", {
     ingredientsCount: ingredients.length,
     ingredients: ingredients,
     vibe: vibe,
+    cuisine: cuisine,
   });
 
   // If no API key is set, return mock data
@@ -251,32 +261,40 @@ export async function generateRecipe(
     keyLength: GEMINI_API_KEY.length,
   });
 
-  const vibePrompts = {
-    eco: "Create a zero-waste recipe that uses ALL the provided ingredients to minimize food waste. Focus on using every part of the ingredients and avoiding any waste.",
-    health: "Create a high-protein, macro-optimized recipe focused on fitness and health. Include specific portion sizes and macro breakdowns.",
-    travel: "Create a recipe with a cultural twist - transform these ingredients into a dish from a specific cuisine (e.g., Japanese, Mexican, Italian). Make it authentic and flavorful.",
-  };
+  const proteinSafety = getProteinSafety(ingredients);
+  const method = selectCookingMethod(ingredients);
+  const systemPrompt = buildRecipeSystemPrompt(
+    ingredients,
+    vibe,
+    method,
+    proteinSafety
+  );
+
+  const cuisinePrompt =
+    cuisine && cuisine !== "any"
+      ? `\n\nIMPORTANT: This MUST be a ${cuisine} cuisine recipe. Use ${cuisine} cooking techniques, seasonings, and presentation styles.`
+      : "";
 
   try {
     const url = `${GEMINI_API_URL}/models/${GEMINI_MODEL_TEXT}:generateContent?key=${GEMINI_API_KEY}`;
     console.log("[RECIPE] API URL:", url.replace(GEMINI_API_KEY, "***HIDDEN***"));
-    
-    const prompt = `You are a professional chef and recipe creator. Always respond with valid JSON only.
 
-${vibePrompts[vibe]}
+    const prompt = `${systemPrompt}${cuisinePrompt}
 
-Ingredients: ${ingredients.join(", ")}
+Always respond with valid JSON only.
+
+IMPORTANT: The recipe title MUST be in English. If creating a non-English cuisine dish, use the format: "English Name (Native Name)" - for example: "Pork and Egg Rice Bowl (Buta Soboro Tamago Donburi)" or "Chicken Teriyaki Bowl".
 
 Return a JSON object with this exact structure:
 {
-  "title": "Recipe name",
+  "title": "Recipe name (always in English or English + native name)",
   "calories": number (estimated),
   "ingredients": ["ingredient1", "ingredient2", ...],
   "steps": ["step 1", "step 2", ...],
   "vibe": "${vibe}"
 }
 
-Make sure the ingredients array includes all provided ingredients plus any common pantry items needed.`;
+Make the steps concise and clear. Include timing when needed.`;
 
     console.log("[RECIPE] Sending request to Gemini API...");
     console.log("[RECIPE] Prompt length:", prompt.length, "characters");
@@ -464,7 +482,7 @@ Make sure the ingredients array includes all provided ingredients plus any commo
       }
     }
     
-    // Validate and return recipe
+    // Validate and return recipe (safety rules from our engine, shown at end of view only)
     const validatedRecipe: Recipe = {
       title: recipe.title || "Generated Recipe",
       calories: typeof recipe.calories === "number" ? recipe.calories : 500,
@@ -475,6 +493,7 @@ Make sure the ingredients array includes all provided ingredients plus any commo
         ? recipe.steps 
         : ["Follow the recipe instructions carefully."],
       vibe: recipe.vibe || vibe,
+      safetyRules: [...GENERAL_SAFETY_RULES, proteinSafety],
     };
     
     console.log("[RECIPE] Final validated recipe:", {
@@ -534,6 +553,7 @@ function getMockRecipe(
     ],
   };
 
+  const proteinSafety = getProteinSafety(ingredients);
   return {
     title: vibeTitles[vibe],
     calories: Math.floor(Math.random() * 200) + 400,
@@ -545,5 +565,6 @@ function getMockRecipe(
     ],
     steps: vibeSteps[vibe],
     vibe,
+    safetyRules: [...GENERAL_SAFETY_RULES, proteinSafety],
   };
 }
