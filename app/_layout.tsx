@@ -1,7 +1,24 @@
 import { Stack } from "expo-router";
+import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { NetworkProvider } from "@/lib/network-context";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { initSentry } from "@/lib/sentry";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
 import "../global.css";
 
-export default function RootLayout() {
+SplashScreen.preventAutoHideAsync();
+initSentry();
+
+function AppContent() {
+  const { loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading) SplashScreen.hideAsync();
+  }, [loading]);
+
+  if (loading) return null;
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="welcome" />
@@ -17,5 +34,17 @@ export default function RootLayout() {
       <Stack.Screen name="onboarding-2" />
       <Stack.Screen name="onboarding-3" />
     </Stack>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ErrorBoundary>
+      <NetworkProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </NetworkProvider>
+    </ErrorBoundary>
   );
 }

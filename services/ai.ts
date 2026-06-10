@@ -18,6 +18,10 @@ import {
   buildRecipeSystemPrompt,
 } from "./recipeEngine";
 
+const log = (...args: any[]) => { if (__DEV__) console.log(...args); };
+const logError = (...args: any[]) => { if (__DEV__) console.error(...args); };
+const logWarn = (...args: any[]) => { if (__DEV__) console.warn(...args); };
+
 export interface Recipe {
   title: string;
   calories: number;
@@ -35,15 +39,15 @@ export interface Recipe {
 export async function scanIngredients(
   imageUri: string | null
 ): Promise<string[]> {
-  console.log("[SCAN] scanIngredients called with imageUri:", imageUri ? "provided" : "null");
+  log("[SCAN] scanIngredients called with imageUri:", imageUri ? "provided" : "null");
   
   // If no image URI, return mock data (for testing without camera)
   if (!imageUri) {
-    console.log("[SCAN] No image provided - using mock data");
+    log("[SCAN] No image provided - using mock data");
     return new Promise((resolve) => {
       setTimeout(() => {
         const mockIngredients = ["Chicken Breast", "Broccoli", "Rice"];
-        console.log("[SCAN] Mock data returned:", mockIngredients);
+        log("[SCAN] Mock data returned:", mockIngredients);
         resolve(mockIngredients);
       }, 1000);
     });
@@ -51,19 +55,19 @@ export async function scanIngredients(
 
   // If no API key is set, return mock data
   if (!GEMINI_API_KEY || GEMINI_API_KEY === "your-gemini-api-key-here") {
-    console.log("[SCAN] No API key set - using mock data");
-    console.log("[SCAN] Set GEMINI_API_KEY in lib/config.ts to use real API");
+    log("[SCAN] No API key set - using mock data");
+    log("[SCAN] Set GEMINI_API_KEY in lib/config.ts to use real API");
     return new Promise((resolve) => {
       setTimeout(() => {
         const mockIngredients = ["Chicken Breast", "Broccoli", "Rice"];
-        console.log("[SCAN] Mock data returned:", mockIngredients);
+        log("[SCAN] Mock data returned:", mockIngredients);
         resolve(mockIngredients);
       }, 1000);
     });
   }
 
-  console.log("[SCAN] API key is configured");
-  console.log("[SCAN] Config:", {
+  log("[SCAN] API key is configured");
+  log("[SCAN] Config:", {
     apiUrl: GEMINI_API_URL,
     model: GEMINI_MODEL_VISION,
     keyLength: GEMINI_API_KEY.length,
@@ -71,19 +75,19 @@ export async function scanIngredients(
   });
 
   try {
-    console.log("[SCAN] Reading image file:", imageUri);
-    console.log("[SCAN] Converting image to base64...");
+    log("[SCAN] Reading image file:", imageUri);
+    log("[SCAN] Converting image to base64...");
     
     // Convert image to base64 using legacy API (for compatibility)
     const base64Image = await FileSystem.readAsStringAsync(imageUri, {
       encoding: FileSystem.EncodingType.Base64,
     });
 
-    console.log("[SCAN] Image converted to base64, length:", base64Image.length);
-    console.log("[SCAN] Preparing Gemini API request...");
+    log("[SCAN] Image converted to base64, length:", base64Image.length);
+    log("[SCAN] Preparing Gemini API request...");
 
     const url = `${GEMINI_API_URL}/models/${GEMINI_MODEL_VISION}:generateContent?key=${GEMINI_API_KEY}`;
-    console.log("[SCAN] API URL:", url.replace(GEMINI_API_KEY, "***HIDDEN***"));
+    log("[SCAN] API URL:", url.replace(GEMINI_API_KEY, "***HIDDEN***"));
     
     const requestBody = {
       contents: [
@@ -103,9 +107,9 @@ export async function scanIngredients(
       ],
     };
 
-    console.log("[SCAN] Sending request to Gemini API...");
-    console.log("[SCAN] Request body size:", JSON.stringify(requestBody).length, "bytes");
-    console.log("[SCAN] Image data size:", base64Image.length, "bytes");
+    log("[SCAN] Sending request to Gemini API...");
+    log("[SCAN] Request body size:", JSON.stringify(requestBody).length, "bytes");
+    log("[SCAN] Image data size:", base64Image.length, "bytes");
     
     const response = await fetch(url, {
       method: "POST",
@@ -115,7 +119,7 @@ export async function scanIngredients(
       body: JSON.stringify(requestBody),
     });
 
-    console.log("[SCAN] Response received:", {
+    log("[SCAN] Response received:", {
       status: response.status,
       statusText: response.statusText,
       ok: response.ok,
@@ -124,11 +128,11 @@ export async function scanIngredients(
 
     if (!response.ok) {
       const errorData = await response.json().catch((e) => {
-        console.error("[SCAN] Failed to parse error response:", e);
+        logError("[SCAN] Failed to parse error response:", e);
         return {};
       });
       const errorMessage = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`;
-      console.error("[SCAN] Gemini API error:", {
+      logError("[SCAN] Gemini API error:", {
         message: errorMessage,
         fullError: errorData,
         status: response.status,
@@ -136,10 +140,10 @@ export async function scanIngredients(
       throw new Error(`Gemini API error: ${errorMessage}`);
     }
 
-    console.log("[SCAN] Response OK, parsing JSON...");
+    log("[SCAN] Response OK, parsing JSON...");
     const data = await response.json();
     
-    console.log("[SCAN] Full API response structure:", {
+    log("[SCAN] Full API response structure:", {
       hasCandidates: !!data.candidates,
       candidatesLength: data.candidates?.length || 0,
       firstCandidate: data.candidates?.[0] ? {
@@ -150,11 +154,11 @@ export async function scanIngredients(
     });
 
     const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
-    console.log("[SCAN] Extracted content from response:");
-    console.log("[SCAN] Content type:", typeof content);
-    console.log("[SCAN] Content length:", content.length);
-    console.log("[SCAN] Content preview (first 200 chars):", content.substring(0, 200));
-    console.log("[SCAN] Full content:", content);
+    log("[SCAN] Extracted content from response:");
+    log("[SCAN] Content type:", typeof content);
+    log("[SCAN] Content length:", content.length);
+    log("[SCAN] Content preview (first 200 chars):", content.substring(0, 200));
+    log("[SCAN] Full content:", content);
     
     // Parse the JSON array from the response
     let ingredients: string[] = [];
@@ -162,35 +166,35 @@ export async function scanIngredients(
     
     // Remove markdown code blocks if present
     if (cleanedContent.startsWith("```")) {
-      console.log("[SCAN] Detected markdown code block, cleaning...");
+      log("[SCAN] Detected markdown code block, cleaning...");
       cleanedContent = cleanedContent.replace(/^```json\n?/i, "").replace(/^```\n?/, "").replace(/```$/g, "").trim();
-      console.log("[SCAN] Cleaned content:", cleanedContent);
+      log("[SCAN] Cleaned content:", cleanedContent);
     }
     
     // Try to extract JSON array from text if it's wrapped
     if (!cleanedContent.startsWith("[")) {
-      console.log("[SCAN] Content doesn't start with '[', trying to extract JSON array...");
+      log("[SCAN] Content doesn't start with '[', trying to extract JSON array...");
       const jsonMatch = cleanedContent.match(/\[.*\]/s);
       if (jsonMatch) {
         cleanedContent = jsonMatch[0];
-        console.log("[SCAN] Extracted JSON array:", cleanedContent);
+        log("[SCAN] Extracted JSON array:", cleanedContent);
       }
     }
     
     try {
-      console.log("[SCAN] Attempting to parse JSON...");
+      log("[SCAN] Attempting to parse JSON...");
       ingredients = JSON.parse(cleanedContent);
-      console.log("[SCAN] JSON parsed successfully:", ingredients);
+      log("[SCAN] JSON parsed successfully:", ingredients);
       
       if (!Array.isArray(ingredients)) {
-        console.warn("[SCAN] Parsed result is not an array:", typeof ingredients, ingredients);
-        console.warn("[SCAN] Using fallback data");
+        logWarn("[SCAN] Parsed result is not an array:", typeof ingredients, ingredients);
+        logWarn("[SCAN] Using fallback data");
         ingredients = ["Chicken Breast", "Broccoli", "Rice"];
       } else {
-        console.log("[SCAN] Ingredients array is valid, length:", ingredients.length);
+        log("[SCAN] Ingredients array is valid, length:", ingredients.length);
       }
     } catch (parseError: any) {
-      console.error("[SCAN] JSON parse error:", {
+      logError("[SCAN] JSON parse error:", {
         message: parseError?.message,
         name: parseError?.name,
         content: cleanedContent,
@@ -198,21 +202,21 @@ export async function scanIngredients(
       });
       
       // Try to extract ingredients from text manually
-      console.log("[SCAN] Attempting to extract ingredients from text...");
+      log("[SCAN] Attempting to extract ingredients from text...");
       const ingredientMatches = cleanedContent.match(/"([^"]+)"/g) || cleanedContent.match(/'([^']+)'/g);
       if (ingredientMatches) {
         ingredients = ingredientMatches.map((match: string) => match.replace(/["']/g, ""));
-        console.log("[SCAN] Extracted ingredients from text:", ingredients);
+        log("[SCAN] Extracted ingredients from text:", ingredients);
       } else {
-        console.warn("[SCAN] Could not extract ingredients, using fallback");
+        logWarn("[SCAN] Could not extract ingredients, using fallback");
         ingredients = ["Chicken Breast", "Broccoli", "Rice"];
       }
     }
     
-    console.log("[SCAN] Final ingredients:", ingredients);
+    log("[SCAN] Final ingredients:", ingredients);
     return ingredients;
   } catch (error: any) {
-    console.error("[SCAN] Error in scanIngredients:", {
+    logError("[SCAN] Error in scanIngredients:", {
       message: error?.message,
       stack: error?.stack,
       name: error?.name,
@@ -224,9 +228,9 @@ export async function scanIngredients(
     }
     
     // Fallback to mock data on error
-    console.log("[SCAN] Falling back to mock data due to error");
+    log("[SCAN] Falling back to mock data due to error");
     const fallbackIngredients = ["Chicken Breast", "Broccoli", "Rice"];
-    console.log("[SCAN] Returning fallback:", fallbackIngredients);
+    log("[SCAN] Returning fallback:", fallbackIngredients);
     return fallbackIngredients;
   }
 }
@@ -240,7 +244,7 @@ export async function generateRecipe(
   vibe: "eco" | "health" | "travel",
   cuisine?: string
 ): Promise<Recipe> {
-  console.log("[RECIPE] generateRecipe called with:", {
+  log("[RECIPE] generateRecipe called with:", {
     ingredientsCount: ingredients.length,
     ingredients: ingredients,
     vibe: vibe,
@@ -249,13 +253,13 @@ export async function generateRecipe(
 
   // If no API key is set, return mock data
   if (!GEMINI_API_KEY || GEMINI_API_KEY === "your-gemini-api-key-here") {
-    console.log("[RECIPE] No API key set - using mock data");
-    console.log("[RECIPE] Set GEMINI_API_KEY in lib/config.ts to use real API");
+    log("[RECIPE] No API key set - using mock data");
+    log("[RECIPE] Set GEMINI_API_KEY in lib/config.ts to use real API");
     return getMockRecipe(ingredients, vibe);
   }
 
-  console.log("[RECIPE] API key is configured");
-  console.log("[RECIPE] Config:", {
+  log("[RECIPE] API key is configured");
+  log("[RECIPE] Config:", {
     apiUrl: GEMINI_API_URL,
     model: GEMINI_MODEL_TEXT,
     keyLength: GEMINI_API_KEY.length,
@@ -277,7 +281,7 @@ export async function generateRecipe(
 
   try {
     const url = `${GEMINI_API_URL}/models/${GEMINI_MODEL_TEXT}:generateContent?key=${GEMINI_API_KEY}`;
-    console.log("[RECIPE] API URL:", url.replace(GEMINI_API_KEY, "***HIDDEN***"));
+    log("[RECIPE] API URL:", url.replace(GEMINI_API_KEY, "***HIDDEN***"));
 
     const prompt = `${systemPrompt}${cuisinePrompt}
 
@@ -296,8 +300,8 @@ Return a JSON object with this exact structure:
 
 Make the steps concise and clear. Include timing when needed.`;
 
-    console.log("[RECIPE] Sending request to Gemini API...");
-    console.log("[RECIPE] Prompt length:", prompt.length, "characters");
+    log("[RECIPE] Sending request to Gemini API...");
+    log("[RECIPE] Prompt length:", prompt.length, "characters");
 
     const response = await fetch(url, {
       method: "POST",
@@ -321,7 +325,7 @@ Make the steps concise and clear. Include timing when needed.`;
       }),
     });
 
-    console.log("[RECIPE] Response received:", {
+    log("[RECIPE] Response received:", {
       status: response.status,
       statusText: response.statusText,
       ok: response.ok,
@@ -329,11 +333,11 @@ Make the steps concise and clear. Include timing when needed.`;
 
     if (!response.ok) {
       const errorData = await response.json().catch((e) => {
-        console.error("[RECIPE] Failed to parse error response:", e);
+        logError("[RECIPE] Failed to parse error response:", e);
         return {};
       });
       const errorMessage = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`;
-      console.error("[RECIPE] Gemini API error:", {
+      logError("[RECIPE] Gemini API error:", {
         message: errorMessage,
         fullError: errorData,
         status: response.status,
@@ -341,10 +345,10 @@ Make the steps concise and clear. Include timing when needed.`;
       throw new Error(`Gemini API error: ${errorMessage}`);
     }
 
-    console.log("[RECIPE] Response OK, parsing JSON...");
+    log("[RECIPE] Response OK, parsing JSON...");
     const data = await response.json();
     
-    console.log("[RECIPE] Full API response structure:", {
+    log("[RECIPE] Full API response structure:", {
       hasCandidates: !!data.candidates,
       candidatesLength: data.candidates?.length || 0,
       firstCandidate: data.candidates?.[0] ? {
@@ -358,49 +362,49 @@ Make the steps concise and clear. Include timing when needed.`;
     // Check if response was truncated
     const finishReason = data.candidates?.[0]?.finishReason;
     if (finishReason === "MAX_TOKENS" || finishReason === "OTHER") {
-      console.warn("[RECIPE] Response may be truncated. Finish reason:", finishReason);
+      logWarn("[RECIPE] Response may be truncated. Finish reason:", finishReason);
     }
 
     const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
     
-    console.log("[RECIPE] Extracted content from response:");
-    console.log("[RECIPE] Content type:", typeof content);
-    console.log("[RECIPE] Content length:", content.length);
-    console.log("[RECIPE] Content preview (first 500 chars):", content.substring(0, 500));
-    console.log("[RECIPE] Content preview (last 200 chars):", content.substring(Math.max(0, content.length - 200)));
-    console.log("[RECIPE] Full content:", content);
+    log("[RECIPE] Extracted content from response:");
+    log("[RECIPE] Content type:", typeof content);
+    log("[RECIPE] Content length:", content.length);
+    log("[RECIPE] Content preview (first 500 chars):", content.substring(0, 500));
+    log("[RECIPE] Content preview (last 200 chars):", content.substring(Math.max(0, content.length - 200)));
+    log("[RECIPE] Full content:", content);
     
     // Extract JSON from response (Gemini might wrap it in markdown code blocks)
     let jsonContent = content.trim();
     
     // Remove markdown code blocks if present
     if (jsonContent.startsWith("```")) {
-      console.log("[RECIPE] Detected markdown code block, cleaning...");
+      log("[RECIPE] Detected markdown code block, cleaning...");
       jsonContent = jsonContent.replace(/^```json\n?/i, "").replace(/^```\n?/, "").replace(/```$/g, "").trim();
-      console.log("[RECIPE] Cleaned content length:", jsonContent.length);
+      log("[RECIPE] Cleaned content length:", jsonContent.length);
     }
     
     // Try to extract JSON object from text if it's wrapped
     if (!jsonContent.startsWith("{")) {
-      console.log("[RECIPE] Content doesn't start with '{', trying to extract JSON object...");
+      log("[RECIPE] Content doesn't start with '{', trying to extract JSON object...");
       // Use a more robust regex that handles nested objects
       const jsonMatch = jsonContent.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         jsonContent = jsonMatch[0];
-        console.log("[RECIPE] Extracted JSON object, length:", jsonContent.length);
+        log("[RECIPE] Extracted JSON object, length:", jsonContent.length);
       }
     }
     
     // Check if JSON appears incomplete (doesn't end with })
     if (!jsonContent.endsWith("}")) {
-      console.warn("[RECIPE] JSON content doesn't end with '}', may be truncated");
-      console.warn("[RECIPE] Last 100 chars:", jsonContent.substring(Math.max(0, jsonContent.length - 100)));
+      logWarn("[RECIPE] JSON content doesn't end with '}', may be truncated");
+      logWarn("[RECIPE] Last 100 chars:", jsonContent.substring(Math.max(0, jsonContent.length - 100)));
       
       // Try to repair incomplete JSON by finding the last complete structure
       // Count braces to see if we can close it
       const openBraces = (jsonContent.match(/\{/g) || []).length;
       const closeBraces = (jsonContent.match(/\}/g) || []).length;
-      console.log("[RECIPE] Brace count - Open:", openBraces, "Close:", closeBraces);
+      log("[RECIPE] Brace count - Open:", openBraces, "Close:", closeBraces);
       
       if (openBraces > closeBraces) {
         // Try to close incomplete arrays/objects
@@ -426,7 +430,7 @@ Make the steps concise and clear. Include timing when needed.`;
           for (let i = 0; i < missingBraces; i++) {
             repaired += '}';
           }
-          console.log("[RECIPE] Attempted to repair JSON, new length:", repaired.length);
+          log("[RECIPE] Attempted to repair JSON, new length:", repaired.length);
           jsonContent = repaired;
         }
       }
@@ -434,11 +438,11 @@ Make the steps concise and clear. Include timing when needed.`;
     
     let recipe: any = {};
     try {
-      console.log("[RECIPE] Attempting to parse JSON...");
-      console.log("[RECIPE] JSON content length:", jsonContent.length);
+      log("[RECIPE] Attempting to parse JSON...");
+      log("[RECIPE] JSON content length:", jsonContent.length);
       recipe = JSON.parse(jsonContent);
-      console.log("[RECIPE] JSON parsed successfully");
-      console.log("[RECIPE] Parsed recipe structure:", {
+      log("[RECIPE] JSON parsed successfully");
+      log("[RECIPE] Parsed recipe structure:", {
         hasTitle: !!recipe.title,
         hasCalories: typeof recipe.calories === "number",
         hasIngredients: Array.isArray(recipe.ingredients),
@@ -447,7 +451,7 @@ Make the steps concise and clear. Include timing when needed.`;
         stepsCount: recipe.steps?.length || 0,
       });
     } catch (parseError: any) {
-      console.error("[RECIPE] JSON parse error:", {
+      logError("[RECIPE] JSON parse error:", {
         message: parseError?.message,
         name: parseError?.name,
         jsonContent: jsonContent.substring(0, 500),
@@ -457,14 +461,14 @@ Make the steps concise and clear. Include timing when needed.`;
       
       // If JSON is incomplete, try to extract what we can
       if (parseError?.message?.includes("Unexpected end")) {
-        console.log("[RECIPE] JSON appears incomplete, attempting partial extraction...");
+        log("[RECIPE] JSON appears incomplete, attempting partial extraction...");
         // Try to extract at least title and some ingredients
         const titleMatch = jsonContent.match(/"title"\s*:\s*"([^"]*)"/);
         const caloriesMatch = jsonContent.match(/"calories"\s*:\s*(\d+)/);
         const ingredientsMatch = jsonContent.match(/"ingredients"\s*:\s*\[(.*?)\]/s);
         
         if (titleMatch || caloriesMatch || ingredientsMatch) {
-          console.log("[RECIPE] Found partial data, creating recipe with available fields");
+          log("[RECIPE] Found partial data, creating recipe with available fields");
           recipe = {
             title: titleMatch ? titleMatch[1] : "Generated Recipe",
             calories: caloriesMatch ? parseInt(caloriesMatch[1]) : 500,
@@ -496,7 +500,7 @@ Make the steps concise and clear. Include timing when needed.`;
       safetyRules: [...GENERAL_SAFETY_RULES, proteinSafety],
     };
     
-    console.log("[RECIPE] Final validated recipe:", {
+    log("[RECIPE] Final validated recipe:", {
       title: validatedRecipe.title,
       calories: validatedRecipe.calories,
       ingredientsCount: validatedRecipe.ingredients.length,
@@ -505,13 +509,13 @@ Make the steps concise and clear. Include timing when needed.`;
     
     return validatedRecipe;
   } catch (error: any) {
-    console.error("[RECIPE] Error generating recipe:", {
+    logError("[RECIPE] Error generating recipe:", {
       message: error?.message,
       stack: error?.stack,
       name: error?.name,
     });
     // Fallback to mock data on error
-    console.log("[RECIPE] Falling back to mock data due to error");
+    log("[RECIPE] Falling back to mock data due to error");
     return getMockRecipe(ingredients, vibe);
   }
 }

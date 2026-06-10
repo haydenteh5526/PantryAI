@@ -1,12 +1,7 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Alert } from "react-native";
 
 export default function TabLayout() {
-  const showUnderDevelopment = () => {
-    Alert.alert("Under development", "Feature currently under development.");
-  };
-
   return (
     <Tabs
       screenOptions={{
@@ -39,12 +34,6 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="social"
-        listeners={{
-          tabPress: (e) => {
-            e.preventDefault();
-            showUnderDevelopment();
-          },
-        }}
         options={{
           title: "Social",
           tabBarIcon: ({ color, size }) => (
@@ -54,12 +43,6 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="profile"
-        listeners={{
-          tabPress: (e) => {
-            e.preventDefault();
-            showUnderDevelopment();
-          },
-        }}
         options={{
           title: "Profile",
           tabBarIcon: ({ color, size }) => (

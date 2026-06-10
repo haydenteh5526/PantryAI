@@ -1,15 +1,17 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { View, Text, TouchableOpacity, Alert, StyleSheet, ScrollView } from "react-native";
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
+import { getFavorites, removeFavorite, type FavoriteRecipe } from "@/lib/favorites";
 
 export default function HomeScreen() {
   const [showCamera, setShowCamera] = useState(false);
+  const [favorites, setFavorites] = useState<FavoriteRecipe[]>([]);
   const [facing, setFacing] = useState<CameraType>("back");
   const [permission, requestPermission] = useCameraPermissions();
   const [isScanning, setIsScanning] = useState(false);
@@ -20,6 +22,10 @@ export default function HomeScreen() {
   useEffect(() => {
     loadUserMode();
   }, []);
+
+  useFocusEffect(useCallback(() => {
+    getFavorites().then(setFavorites);
+  }, []));
 
   const loadUserMode = async () => {
     const mode = await AsyncStorage.getItem("userMode");
@@ -88,26 +94,26 @@ export default function HomeScreen() {
     };
 
     const handleScan = async () => {
-      console.log("[CAMERA] Scan button pressed");
+      if (__DEV__) console.log("[CAMERA] Scan button pressed");
       
       if (!cameraRef.current) {
-        console.error("[CAMERA] Camera ref is null");
+        if (__DEV__) console.error("[CAMERA] Camera ref is null");
         Alert.alert("Error", "Camera not ready");
         return;
       }
 
-      console.log("[CAMERA] Camera ref is available");
+      if (__DEV__) console.log("[CAMERA] Camera ref is available");
       setIsScanning(true);
       
       try {
-        console.log("[CAMERA] Attempting to capture photo...");
+        if (__DEV__) console.log("[CAMERA] Attempting to capture photo...");
         const photo = await (cameraRef.current as any).takePictureAsync({
           quality: 0.8,
           base64: false,
           shutterSound: false,
         });
 
-        console.log("[CAMERA] Photo capture result:", {
+        if (__DEV__) console.log("[CAMERA] Photo capture result:", {
           uri: photo?.uri,
           width: photo?.width,
           height: photo?.height,
@@ -115,34 +121,34 @@ export default function HomeScreen() {
         });
 
         if (!photo?.uri) {
-          console.error("[CAMERA] Photo captured but no URI returned");
+          if (__DEV__) console.error("[CAMERA] Photo captured but no URI returned");
           throw new Error("Failed to capture photo");
         }
 
-        console.log("[CAMERA] Photo captured successfully:", photo.uri);
+        if (__DEV__) console.log("[CAMERA] Photo captured successfully:", photo.uri);
 
         setShowCamera(false);
         router.push({ pathname: "/scanning-ingredients", params: { imageUri: photo.uri } });
       } catch (error: any) {
-        console.error("[ERROR] Scan error occurred:", {
+        if (__DEV__) console.error("[ERROR] Scan error occurred:", {
           message: error?.message,
           stack: error?.stack,
           name: error?.name,
         });
         
         if (error?.message?.includes("takePictureAsync") || error?.message?.includes("Camera")) {
-          console.log("[FALLBACK] Camera capture failed, using mock data");
+          if (__DEV__) console.log("[FALLBACK] Camera capture failed, using mock data");
           setShowCamera(false);
           router.push({ pathname: "/scanning-ingredients" });
         } else {
-          console.error("[ERROR] Non-camera error, showing alert to user");
+          if (__DEV__) console.error("[ERROR] Non-camera error, showing alert to user");
           Alert.alert(
             "Error",
             error?.message || "Failed to scan ingredients. Please try again."
           );
         }
       } finally {
-        console.log("[CAMERA] Scan process completed");
+        if (__DEV__) console.log("[CAMERA] Scan process completed");
         setIsScanning(false);
       }
     };
@@ -310,6 +316,29 @@ export default function HomeScreen() {
               Type in your ingredients if you prefer not to scan
             </Text>
           </TouchableOpacity>
+
+          {/* Saved Recipes */}
+          {favorites.length > 0 && (
+            <View className="mt-6">
+              <Text className="text-text text-xl font-semibold mb-4">Saved Recipes</Text>
+              {favorites.slice(0, 3).map((fav) => (
+                <TouchableOpacity
+                  key={fav.id}
+                  onPress={() => router.push({ pathname: "/active-cooking", params: { title: fav.title, steps: JSON.stringify(fav.steps) } })}
+                  className="bg-surface rounded-2xl p-4 mb-3 flex-row items-center"
+                >
+                  <View className="bg-primary/10 w-12 h-12 rounded-full items-center justify-center mr-4">
+                    <Ionicons name="bookmark" size={20} color="#84A98C" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-text font-semibold" numberOfLines={1}>{fav.title}</Text>
+                    <Text className="text-text/60 text-sm">{fav.calories} cal · {fav.steps.length} steps</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#CAD2C5" />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
 
           {/* Info Cards */}
           <View className="mt-6">

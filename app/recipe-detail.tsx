@@ -3,16 +3,20 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { generateRecipe, type Recipe } from "@/services/ai";
 import { useEffect, useState } from "react";
+import { addFavorite, isFavorited } from "@/lib/favorites";
+import { RecipeDetailSkeleton } from "@/components/Skeleton";
+import * as Haptics from "expo-haptics";
 
 export default function RecipeDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const loadRecipe = async () => {
-      console.log("[RECIPE_DETAIL] Loading recipe with params:", {
+      if (__DEV__) console.log("[RECIPE_DETAIL] Loading recipe with params:", {
         hasIngredients: !!params.ingredients,
         vibe: params.vibe,
         cuisine: params.cuisine,
@@ -22,15 +26,17 @@ export default function RecipeDetailScreen() {
         const ingredients = JSON.parse(params.ingredients as string);
         const vibe = params.vibe as "eco" | "health" | "travel";
         const cuisine = params.cuisine as string;
-        console.log("[RECIPE_DETAIL] Parsed ingredients:", ingredients);
-        console.log("[RECIPE_DETAIL] Vibe:", vibe);
-        console.log("[RECIPE_DETAIL] Cuisine:", cuisine);
+        if (__DEV__) console.log("[RECIPE_DETAIL] Parsed ingredients:", ingredients);
+        if (__DEV__) console.log("[RECIPE_DETAIL] Vibe:", vibe);
+        if (__DEV__) console.log("[RECIPE_DETAIL] Cuisine:", cuisine);
         
         const generated = await generateRecipe(ingredients, vibe, cuisine);
-        console.log("[RECIPE_DETAIL] Recipe generated successfully");
+        if (__DEV__) console.log("[RECIPE_DETAIL] Recipe generated successfully");
         setRecipe(generated);
+        const alreadySaved = await isFavorited(generated.title);
+        setSaved(alreadySaved);
       } catch (error: any) {
-        console.error("[RECIPE_DETAIL] Failed to generate recipe:", {
+        if (__DEV__) console.error("[RECIPE_DETAIL] Failed to generate recipe:", {
           message: error?.message,
           stack: error?.stack,
           name: error?.name,
@@ -52,12 +58,7 @@ export default function RecipeDetailScreen() {
   }, [params.ingredients, params.vibe, params.cuisine]);
 
   if (loading) {
-    return (
-      <View className="flex-1 bg-background items-center justify-center">
-        <Ionicons name="hourglass" size={48} color="#84A98C" />
-        <Text className="text-text mt-4">Generating recipe...</Text>
-      </View>
-    );
+    return <RecipeDetailSkeleton />;
   }
 
   if (!recipe) {
@@ -80,11 +81,25 @@ export default function RecipeDetailScreen() {
   return (
     <View className="flex-1 bg-background">
       <View className="pt-16 pb-6 px-6 border-b border-muted">
-        <View className="flex-row items-center">
-          <TouchableOpacity onPress={() => router.back()} className="mr-4">
-            <Ionicons name="arrow-back" size={24} color="#2F3E46" />
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center">
+            <TouchableOpacity onPress={() => router.back()} className="mr-4">
+              <Ionicons name="arrow-back" size={24} color="#2F3E46" />
+            </TouchableOpacity>
+            <Text className="text-text text-2xl font-bold">Recipe</Text>
+          </View>
+          <TouchableOpacity
+            onPress={async () => {
+              if (!saved && recipe) {
+                await addFavorite(recipe, params.cuisine as string);
+                setSaved(true);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              }
+            }}
+            disabled={saved}
+          >
+            <Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={28} color={saved ? "#fbbf24" : "#2F3E46"} />
           </TouchableOpacity>
-          <Text className="text-text text-2xl font-bold">Recipe</Text>
         </View>
       </View>
 
@@ -146,7 +161,7 @@ export default function RecipeDetailScreen() {
       <View className="px-6 pb-6 pt-4 border-t border-muted">
         <TouchableOpacity 
           onPress={() => {
-            console.log("[RECIPE_DETAIL] Start Cooking button pressed");
+            if (__DEV__) console.log("[RECIPE_DETAIL] Start Cooking button pressed");
             router.push({
               pathname: "/active-cooking",
               params: {
