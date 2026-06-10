@@ -43,7 +43,8 @@
           "photosPermission": "Allow PantryAI to access your photos to scan ingredients."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "@sentry/react-native"
     ],
     "scheme": "pantryai"
   }

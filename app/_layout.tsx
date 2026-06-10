@@ -2,11 +2,13 @@ import { Stack } from "expo-router";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { NetworkProvider } from "@/lib/network-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { initSentry } from "@/lib/sentry";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import "../global.css";
 
 SplashScreen.preventAutoHideAsync();
+initSentry();
 
 function AppContent() {
   const { loading } = useAuth();

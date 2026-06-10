@@ -1,6 +1,7 @@
 import { Component, type ReactNode } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Sentry } from "@/lib/sentry";
 
 interface Props {
   children: ReactNode;
@@ -20,7 +21,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error) {
     if (__DEV__) console.error("ErrorBoundary caught:", error);
-    // TODO: send to Sentry/Crashlytics in production
+    Sentry.captureException(error);
   }
 
   reset = () => this.setState({ hasError: false, error: null });
