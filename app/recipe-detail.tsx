@@ -3,12 +3,16 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { generateRecipe, type Recipe } from "@/services/ai";
 import { useEffect, useState } from "react";
+import { addFavorite, isFavorited } from "@/lib/favorites";
+import { RecipeDetailSkeleton } from "@/components/Skeleton";
+import * as Haptics from "expo-haptics";
 
 export default function RecipeDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const loadRecipe = async () => {
@@ -29,6 +33,8 @@ export default function RecipeDetailScreen() {
         const generated = await generateRecipe(ingredients, vibe, cuisine);
         if (__DEV__) console.log("[RECIPE_DETAIL] Recipe generated successfully");
         setRecipe(generated);
+        const alreadySaved = await isFavorited(generated.title);
+        setSaved(alreadySaved);
       } catch (error: any) {
         if (__DEV__) console.error("[RECIPE_DETAIL] Failed to generate recipe:", {
           message: error?.message,
@@ -52,12 +58,7 @@ export default function RecipeDetailScreen() {
   }, [params.ingredients, params.vibe, params.cuisine]);
 
   if (loading) {
-    return (
-      <View className="flex-1 bg-background items-center justify-center">
-        <Ionicons name="hourglass" size={48} color="#84A98C" />
-        <Text className="text-text mt-4">Generating recipe...</Text>
-      </View>
-    );
+    return <RecipeDetailSkeleton />;
   }
 
   if (!recipe) {
@@ -80,11 +81,25 @@ export default function RecipeDetailScreen() {
   return (
     <View className="flex-1 bg-background">
       <View className="pt-16 pb-6 px-6 border-b border-muted">
-        <View className="flex-row items-center">
-          <TouchableOpacity onPress={() => router.back()} className="mr-4">
-            <Ionicons name="arrow-back" size={24} color="#2F3E46" />
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center">
+            <TouchableOpacity onPress={() => router.back()} className="mr-4">
+              <Ionicons name="arrow-back" size={24} color="#2F3E46" />
+            </TouchableOpacity>
+            <Text className="text-text text-2xl font-bold">Recipe</Text>
+          </View>
+          <TouchableOpacity
+            onPress={async () => {
+              if (!saved && recipe) {
+                await addFavorite(recipe, params.cuisine as string);
+                setSaved(true);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              }
+            }}
+            disabled={saved}
+          >
+            <Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={28} color={saved ? "#fbbf24" : "#2F3E46"} />
           </TouchableOpacity>
-          <Text className="text-text text-2xl font-bold">Recipe</Text>
         </View>
       </View>
 
