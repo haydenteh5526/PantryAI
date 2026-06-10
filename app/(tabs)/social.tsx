@@ -24,7 +24,7 @@ export default function SocialScreen() {
       const socialFeed = socialJson ? JSON.parse(socialJson) : [];
       setPosts(socialFeed);
     } catch (error) {
-      console.error("Failed to load social feed:", error);
+      if (__DEV__) console.error("Failed to load social feed:", error);
     }
   };
 

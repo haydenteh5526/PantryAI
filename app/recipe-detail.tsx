@@ -12,7 +12,7 @@ export default function RecipeDetailScreen() {
 
   useEffect(() => {
     const loadRecipe = async () => {
-      console.log("[RECIPE_DETAIL] Loading recipe with params:", {
+      if (__DEV__) console.log("[RECIPE_DETAIL] Loading recipe with params:", {
         hasIngredients: !!params.ingredients,
         vibe: params.vibe,
         cuisine: params.cuisine,
@@ -22,15 +22,15 @@ export default function RecipeDetailScreen() {
         const ingredients = JSON.parse(params.ingredients as string);
         const vibe = params.vibe as "eco" | "health" | "travel";
         const cuisine = params.cuisine as string;
-        console.log("[RECIPE_DETAIL] Parsed ingredients:", ingredients);
-        console.log("[RECIPE_DETAIL] Vibe:", vibe);
-        console.log("[RECIPE_DETAIL] Cuisine:", cuisine);
+        if (__DEV__) console.log("[RECIPE_DETAIL] Parsed ingredients:", ingredients);
+        if (__DEV__) console.log("[RECIPE_DETAIL] Vibe:", vibe);
+        if (__DEV__) console.log("[RECIPE_DETAIL] Cuisine:", cuisine);
         
         const generated = await generateRecipe(ingredients, vibe, cuisine);
-        console.log("[RECIPE_DETAIL] Recipe generated successfully");
+        if (__DEV__) console.log("[RECIPE_DETAIL] Recipe generated successfully");
         setRecipe(generated);
       } catch (error: any) {
-        console.error("[RECIPE_DETAIL] Failed to generate recipe:", {
+        if (__DEV__) console.error("[RECIPE_DETAIL] Failed to generate recipe:", {
           message: error?.message,
           stack: error?.stack,
           name: error?.name,
@@ -146,7 +146,7 @@ export default function RecipeDetailScreen() {
       <View className="px-6 pb-6 pt-4 border-t border-muted">
         <TouchableOpacity 
           onPress={() => {
-            console.log("[RECIPE_DETAIL] Start Cooking button pressed");
+            if (__DEV__) console.log("[RECIPE_DETAIL] Start Cooking button pressed");
             router.push({
               pathname: "/active-cooking",
               params: {

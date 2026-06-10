@@ -88,26 +88,26 @@ export default function HomeScreen() {
     };
 
     const handleScan = async () => {
-      console.log("[CAMERA] Scan button pressed");
+      if (__DEV__) console.log("[CAMERA] Scan button pressed");
       
       if (!cameraRef.current) {
-        console.error("[CAMERA] Camera ref is null");
+        if (__DEV__) console.error("[CAMERA] Camera ref is null");
         Alert.alert("Error", "Camera not ready");
         return;
       }
 
-      console.log("[CAMERA] Camera ref is available");
+      if (__DEV__) console.log("[CAMERA] Camera ref is available");
       setIsScanning(true);
       
       try {
-        console.log("[CAMERA] Attempting to capture photo...");
+        if (__DEV__) console.log("[CAMERA] Attempting to capture photo...");
         const photo = await (cameraRef.current as any).takePictureAsync({
           quality: 0.8,
           base64: false,
           shutterSound: false,
         });
 
-        console.log("[CAMERA] Photo capture result:", {
+        if (__DEV__) console.log("[CAMERA] Photo capture result:", {
           uri: photo?.uri,
           width: photo?.width,
           height: photo?.height,
@@ -115,34 +115,34 @@ export default function HomeScreen() {
         });
 
         if (!photo?.uri) {
-          console.error("[CAMERA] Photo captured but no URI returned");
+          if (__DEV__) console.error("[CAMERA] Photo captured but no URI returned");
           throw new Error("Failed to capture photo");
         }
 
-        console.log("[CAMERA] Photo captured successfully:", photo.uri);
+        if (__DEV__) console.log("[CAMERA] Photo captured successfully:", photo.uri);
 
         setShowCamera(false);
         router.push({ pathname: "/scanning-ingredients", params: { imageUri: photo.uri } });
       } catch (error: any) {
-        console.error("[ERROR] Scan error occurred:", {
+        if (__DEV__) console.error("[ERROR] Scan error occurred:", {
           message: error?.message,
           stack: error?.stack,
           name: error?.name,
         });
         
         if (error?.message?.includes("takePictureAsync") || error?.message?.includes("Camera")) {
-          console.log("[FALLBACK] Camera capture failed, using mock data");
+          if (__DEV__) console.log("[FALLBACK] Camera capture failed, using mock data");
           setShowCamera(false);
           router.push({ pathname: "/scanning-ingredients" });
         } else {
-          console.error("[ERROR] Non-camera error, showing alert to user");
+          if (__DEV__) console.error("[ERROR] Non-camera error, showing alert to user");
           Alert.alert(
             "Error",
             error?.message || "Failed to scan ingredients. Please try again."
           );
         }
       } finally {
-        console.log("[CAMERA] Scan process completed");
+        if (__DEV__) console.log("[CAMERA] Scan process completed");
         setIsScanning(false);
       }
     };

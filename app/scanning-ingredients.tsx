@@ -30,7 +30,7 @@ export default function ScanningIngredientsScreen() {
         });
       } catch (e: any) {
         if (cancelled) return;
-        console.error("[SCAN_SCREEN] Failed to scan ingredients:", e);
+        if (__DEV__) console.error("[SCAN_SCREEN] Failed to scan ingredients:", e);
         setErrorMessage(e?.message || "Failed to scan ingredients.");
         Alert.alert("Error", e?.message || "Failed to scan ingredients.");
       }

@@ -89,7 +89,7 @@ export default function ActiveCookingScreen() {
       // Check if timer already exists for this step
       const existingTimer = timers.find(t => t.label === `Step ${currentStep + 1}: ${timeInfo.label}`);
       if (!existingTimer) {
-        console.log(`[TIMER] Detected timer in step ${currentStep + 1}: ${timeInfo.label}`);
+        if (__DEV__) console.log(`[TIMER] Detected timer in step ${currentStep + 1}: ${timeInfo.label}`);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     }
@@ -106,7 +106,7 @@ export default function ActiveCookingScreen() {
           
           // Timer finished
           if (newRemaining <= 0) {
-            console.log(`[TIMER] Timer finished: ${timer.label}`);
+            if (__DEV__) console.log(`[TIMER] Timer finished: ${timer.label}`);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             Alert.alert("Timer Done!", timer.label, [{ text: "OK" }]);
             playTimerDoneCue();
