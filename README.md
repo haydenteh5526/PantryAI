@@ -121,4 +121,4 @@ eas build --profile production --platform all   # Store submission
 
 ## License
 
-ISC
+MIT
