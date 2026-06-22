@@ -114,6 +114,26 @@ export default function RecipeDetailScreen() {
               {recipe.calories} calories
             </Text>
           </View>
+          {recipe.nutrition && (
+            <View className="bg-surface rounded-2xl p-4 mt-3 flex-row justify-between">
+              <View className="items-center">
+                <Text className="text-muted text-xs">Protein</Text>
+                <Text className="text-text font-semibold">{recipe.nutrition.protein_g.toFixed(1)}g</Text>
+              </View>
+              <View className="items-center">
+                <Text className="text-muted text-xs">Carbs</Text>
+                <Text className="text-text font-semibold">{recipe.nutrition.carbohydrates_g.toFixed(1)}g</Text>
+              </View>
+              <View className="items-center">
+                <Text className="text-muted text-xs">Fat</Text>
+                <Text className="text-text font-semibold">{recipe.nutrition.fat_g.toFixed(1)}g</Text>
+              </View>
+              <View className="items-center">
+                <Text className="text-muted text-xs">Fiber</Text>
+                <Text className="text-text font-semibold">{recipe.nutrition.fiber_g.toFixed(1)}g</Text>
+              </View>
+            </View>
+          )}
           <Text className="text-muted text-sm mt-3">
             AI-generated recipe. Proceed with caution; safeguards have been applied.
           </Text>

@@ -9,6 +9,7 @@ import {
   GEMINI_API_URL,
   GEMINI_MODEL_VISION,
   GEMINI_MODEL_TEXT,
+  RECIPE_API_KEY,
 } from "@/lib/config";
 import * as FileSystem from "expo-file-system/legacy";
 import { GENERAL_SAFETY_RULES } from "@/constants/cookingData";
@@ -17,6 +18,7 @@ import {
   selectCookingMethod,
   buildRecipeSystemPrompt,
 } from "./recipeEngine";
+import { generateRecipeFromApi } from "./recipeApi";
 
 const log = (...args: any[]) => { if (__DEV__) console.log(...args); };
 const logError = (...args: any[]) => { if (__DEV__) console.error(...args); };
@@ -30,6 +32,7 @@ export interface Recipe {
   vibe: string;
   /** Mandatory safety rules for this recipe; show at end of recipe view, not as steps. */
   safetyRules?: string[];
+  nutrition?: { calories: number; protein_g: number; carbohydrates_g: number; fat_g: number; fiber_g: number; };
 }
 
 /**
@@ -250,6 +253,19 @@ export async function generateRecipe(
     vibe: vibe,
     cuisine: cuisine,
   });
+
+  // Try Recipe API first if key is configured
+  if (RECIPE_API_KEY) {
+    try {
+      const apiRecipe = await generateRecipeFromApi(ingredients, cuisine);
+      if (apiRecipe) {
+        log("[RECIPE] Recipe API returned result, using it");
+        return apiRecipe;
+      }
+    } catch (e) {
+      log("[RECIPE] Recipe API failed, falling through to Gemini");
+    }
+  }
 
   // If no API key is set, return mock data
   if (!GEMINI_API_KEY || GEMINI_API_KEY === "your-gemini-api-key-here") {

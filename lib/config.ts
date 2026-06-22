@@ -7,7 +7,7 @@
 
 import Constants from "expo-constants";
 
-type Extra = { GEMINI_API_KEY?: string; OPENAI_API_KEY?: string };
+type Extra = { GEMINI_API_KEY?: string; OPENAI_API_KEY?: string; RECIPE_API_KEY?: string };
 const extra = (Constants.expoConfig?.extra ?? {}) as Extra;
 
 // Gemini API Configuration (Free Tier)
@@ -16,6 +16,10 @@ export const GEMINI_API_KEY =
 export const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta";
 export const GEMINI_MODEL_VISION = "gemini-2.5-flash";
 export const GEMINI_MODEL_TEXT = "gemini-2.5-flash";
+
+// Recipe API Configuration
+export const RECIPE_API_KEY =
+  extra.RECIPE_API_KEY ?? process.env.RECIPE_API_KEY ?? "";
 
 // OpenAI Configuration (for production switch)
 export const OPENAI_API_KEY =
